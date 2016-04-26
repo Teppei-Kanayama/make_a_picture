@@ -1,0 +1,2 @@
+process_pictures: process_pictures.c
+	gcc -o process_pictures process_pictures.c `pkg-config --cflags opencv` `pkg-config --libs opencv`
