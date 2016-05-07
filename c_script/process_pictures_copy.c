@@ -2,7 +2,7 @@
 #include <opencv2/imgproc/imgproc_c.h>
 #include <string.h>
 #include <stdio.h>
-
+#include "process_pictures.h"
 //resize the raw pictures into the same size
 //if the number of picture increases, increase the number
 
@@ -16,13 +16,13 @@ int main(int argc, const char *argv[]){
 
   for(i=1; i<=80; i++){
     sprintf(str1, "%d", i);
-    
-    char raw_img[150] = "../raw_pictures/"; //raw_pictures directory 
-    char processed_img[150] = "../processed_pictures/"; //processed_pictures directory  
+
+    char raw_img[150] = "../raw_pictures/"; //raw_pictures directory
+    char processed_img[150] = "../processed_pictures/"; //processed_pictures directory
     strcat(str1, str2);
     strcat(raw_img, str1);
     strcat(processed_img, str1);
-    
+
     //read image
     img = cvLoadImage(raw_img, CV_LOAD_IMAGE_COLOR);
     if(img == NULL){
