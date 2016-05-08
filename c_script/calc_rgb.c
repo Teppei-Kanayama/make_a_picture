@@ -20,7 +20,7 @@ int main(int argc, const char *argv[]){
   unsigned char **img_rgb;
   unsigned char **src_rgb;
   float **dif;
-  int img_number, src_number = 80;
+  int img_number, src_number = 180;
   int tmp = 0;
   char raw_img[150] = "../pikachu_high.jpg";
   int n;
@@ -29,7 +29,7 @@ int main(int argc, const char *argv[]){
   int A = 1; //imgを何倍にするか
   int params[] = {CV_IMWRITE_JPEG_QUALITY, 50, -1}; //save image
 
-
+  //j: here img = pikachu image.
   img = cvLoadImage(raw_img, CV_LOAD_IMAGE_COLOR);
   if(img == NULL){
     printf("no such file\n");
@@ -37,9 +37,12 @@ int main(int argc, const char *argv[]){
   }
 
   //今回はアンドロイドを想定して
-  aspX = 2;
-  aspY = 1;
 
+  //aspX aspYは4x4あたりがベスト。
+  aspX = 4;
+  aspY = 4;
+
+  //j:setting X Y by pikachu image
   X = img->width/aspX;
   Y = img->height/aspY;
   if(img->width%aspX != 0){
@@ -55,19 +58,22 @@ int main(int argc, const char *argv[]){
     A++;
   }
 
+  //j: why scale?
   X = X*A;
   Y = Y*A;
 
-  //resize
+  //resize:now dst = pikachu
   dst = cvCreateImage(cvSize(aspX*X, aspY*Y), IPL_DEPTH_8U, 3);
   cvResize(img, dst, CV_INTER_AREA);
 
-  img_rgb = (unsigned char**)malloc(sizeof(unsigned char*)*Y*X);  //mosaicのRGBを入れる
+  //j:rgb -> why data X*Y? (why not X*Y*3??)
+  img_rgb = (unsigned char**)malloc(sizeof(unsigned char*)*Y*X*3);  //mosaicのRGBを入れる
   if(img_rgb == NULL){
     printf("malloc failed\n");
     exit(-1);
   }
-  src_rgb = (unsigned char**)malloc(sizeof(unsigned char*)*(src_number));
+  //j:rgb -> why data X*Y? (why not X*Y*3??)
+  src_rgb = (unsigned char**)malloc(sizeof(unsigned char*)*(src_number)*3);
   if(src_rgb == NULL){
     printf("malloc failed\n");
     exit(-1);
@@ -77,6 +83,8 @@ int main(int argc, const char *argv[]){
    _my_resize(i, aspX, aspY, src_rgb);
   }
 
+
+  //src_rgb = rgb data for 'blocks'
 
   for(y=0; y<Y; y++){
     for(x=0; x<X; x++){
@@ -88,18 +96,23 @@ int main(int argc, const char *argv[]){
       }
       for(j=0; j<aspY/mosaic; j++){
 	      for(i=0; i<aspX/mosaic; i++){
-          for(l=0; l<mosaic; l++){
-            for(k=0; k<mosaic; k++){
-              b += (unsigned char)dst->imageData[dst->widthStep*(y*aspY+j*mosaic+l)+(x*aspX+i*mosaic+k)*3];
-              g += (unsigned char)dst->imageData[dst->widthStep*(y*aspY+j*mosaic+l)+(x*aspX+i*mosaic+k)*3+1];
-              r += (unsigned char)dst->imageData[dst->widthStep*(y*aspY+j*mosaic+l)+(x*aspX+i*mosaic+k)*3+2];
+          // for(l=0; l<mosaic; l++){
+          //   for(k=0; k<mosaic; k++){
+          //     b += (unsigned char)dst->imageData[dst->widthStep*(y*aspY+j*mosaic+l)+(x*aspX+i*mosaic+k)*3];
+          //     g += (unsigned char)dst->imageData[dst->widthStep*(y*aspY+j*mosaic+l)+(x*aspX+i*mosaic+k)*3+1];
+          //     r += (unsigned char)dst->imageData[dst->widthStep*(y*aspY+j*mosaic+l)+(x*aspX+i*mosaic+k)*3+2];
+          //
+          //   }
+          // }
 
-            }
-          }
-          float _mosaic = (float)mosaic;
-          b = b/(_mosaic*_mosaic);
-          g = g/(_mosaic*_mosaic);
-          r = r/(_mosaic*_mosaic);
+          b = (unsigned char)dst->imageData[dst->widthStep*(y*aspY+j)+(x*aspX+i)*3];
+          g = (unsigned char)dst->imageData[dst->widthStep*(y*aspY+j)+(x*aspX+i)*3+1];
+          r = (unsigned char)dst->imageData[dst->widthStep*(y*aspY+j)+(x*aspX+i)*3+2];
+
+          //float _mosaic = (float)mosaic;
+          // b = b/(_mosaic*_mosaic);
+          // g = g/(_mosaic*_mosaic);
+          // r = r/(_mosaic*_mosaic);
           img_rgb[X*y+x][(aspX/mosaic)*j+i*3] = b;
           img_rgb[X*y+x][(aspX/mosaic)*j+i*3+1] = g;
           img_rgb[X*y+x][(aspX/mosaic)*j+i*3+2] = r;
@@ -112,22 +125,25 @@ int main(int argc, const char *argv[]){
   //compare the rgb
   dif = (float**)malloc(sizeof(float*)*src_number);
   for(k=0; k<src_number; k++){
-    dif[k] = (float*)malloc(sizeof(float)*Y*X);
+    dif[k] = (float*)malloc(sizeof(float)*Y*X*3);
     for(y=0; y<Y; y++){
       for(x=0; x<X; x++){
         dif[k][X*y+x] = 0;
         for(j=0; j<aspY/mosaic; j++){
           for(i=0; i<aspX/mosaic; i++){
             float dif_b, dif_g, dif_r;
-            dif_b = (float)img_rgb[X*y+x][(aspX/mosaic)*3*j+i*3]-src_rgb[k][(aspX/mosaic)*3*j+i*3];
-            dif_g = (float)img_rgb[X*y+x][(aspX/mosaic)*3*j+i*3+1]-src_rgb[k][(aspX/mosaic)*3*j+i*3+1];
-            dif_r = (float)img_rgb[X*y+x][(aspX/mosaic)*3*j+i*3+2]-src_rgb[k][(aspX/mosaic)*3*j+i*3+2];
+            dif_b = (float)img_rgb[X*y+x][(aspX/mosaic)*j+i*3  ] - src_rgb[k][(aspX/mosaic)*j+i*3  ];
+            dif_g = (float)img_rgb[X*y+x][(aspX/mosaic)*j+i*3+1] - src_rgb[k][(aspX/mosaic)*j+i*3+1];
+            dif_r = (float)img_rgb[X*y+x][(aspX/mosaic)*j+i*3+2] - src_rgb[k][(aspX/mosaic)*j+i*3+2];
+
             dif[k][X*y+x] += dif_b*dif_b + dif_g*dif_g + dif_r*dif_r;
-            printf("%f\n",dif[k][X*y+x]);
+            //これは勘。2乗和は僅かな誤差の影響をかなり受けるから、supressしたほうが良さそうとおもった。しすぎてもだめ
+            //あと割り算するんならfloat型に統一しないとダメよ
+            dif[k][X*y+x]*=0.01;
+
           }
         }
-        //printf(" dif = %f\n",sqrt(dif[k][X*y+x]/(float)(3*(aspY/mosaic)*(aspX/mosaic))));
-        dif[k][X*y+x] = (float)sqrt((float)dif[k][X*y+x]/(float)(3*(aspY/mosaic)*(aspX/mosaic)));
+        dif[k][X*y+x] = sqrt(dif[k][X*y+x]/(3*(aspY/mosaic)*(aspX/mosaic)));
 
       }
     }
@@ -155,15 +171,6 @@ int main(int argc, const char *argv[]){
     }
   }
 
-  //確認用
-  /*dst2 = cvCreateImage(cvSize(aspX, aspY), IPL_DEPTH_8U, 3);
-  for(j=0; j<dst2->height; j++){
-    for(i=0; i<dst2->width; i++){
-      dst2->imageData[dst2->widthStep*j+i*3] = src_rgb[0][dst2->widthStep*j+i*3];
-      dst2->imageData[dst2->widthStep*j+i*3+1] = src_rgb[0][dst2->widthStep*j+i*3+1];
-      dst2->imageData[dst2->widthStep*j+i*3+2] = src_rgb[0][dst2->widthStep*j+i*3+2];
-    }
-  }*/
 
   //save image
   if(cvSaveImage("dst_img.jpeg", dst2, params)== 1){
@@ -188,7 +195,7 @@ void _my_resize(int n, int width, int height, unsigned char **rgb){
 
   sprintf(str1, "%d", n);
 
-  char raw_img[150] = "../raw_pictures/"; //raw_pictures directory
+  char raw_img[150] = "../raw_pictures_/"; //raw_pictures directory
   char processed_img[150] = "../processed_pictures/"; //processed_pictures directory      strcat(str1, str2);
   strcat(raw_img, str1);
   strcat(raw_img, str2);
@@ -224,6 +231,6 @@ void _my_resize(int n, int width, int height, unsigned char **rgb){
 
   //save image
   if((success = cvSaveImage(processed_img, dst, params)) == 1){
-    printf("%d finish\n", n);
+    //printf("%d finish\n", n);
   }
 }
