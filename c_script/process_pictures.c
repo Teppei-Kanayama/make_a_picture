@@ -7,7 +7,7 @@
 //resize the raw pictures into the same size
 //if the number of picture increases, increase the number
 
-void my_resize(int n, int width, int height, int **rgb){
+void my_resize(int n, int width, int height, unsigned char **rgb){
   int x, y;
   IplImage *img, *dst;
   char str1[128] = {0};
@@ -24,7 +24,7 @@ void my_resize(int n, int width, int height, int **rgb){
 
   strcat(processed_img, str1);
   strcat(processed_img, str2);
-
+  printf("%s\n",str1);
   //read image
   img = cvLoadImage(raw_img, CV_LOAD_IMAGE_COLOR);
   if(img == NULL){
@@ -36,7 +36,7 @@ void my_resize(int n, int width, int height, int **rgb){
   dst = cvCreateImage(cvSize(width, height), IPL_DEPTH_8U, 3);
   cvResize(img, dst, CV_INTER_CUBIC);
 
-  rgb[n] = (int*)malloc(sizeof(int)*width*height*3);
+  rgb[n] = (unsigned char*)malloc(sizeof(unsigned char)*width*height*3);
   if(rgb[n] == NULL){
     printf("malloc failed\n");
     exit(-1);
