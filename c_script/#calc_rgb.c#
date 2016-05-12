@@ -1,0 +1,139 @@
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc_c.h>
+#include <string.h>
+#include <stdio.h>
+#include <math.h>
+
+#include "process_pictures.h";
+
+#define mosaic 40  //mosaic’¤Î’°ì’ÊÕ’¤Î’Âç’¤­’¤µ
+//calc rgb of src and img, put the src which has nearset rgb to img
+//img’¤Ïsrc’¤Î’¿ô’¤È’Æ±’¤¸’¤â’¤·’¤¯’¤Ï’¾¯’¤·’Â¿’¤á’¤Ë’Ê¬’³ä’¤·’¤ÆRGB’¤ò’·×’»»
+//src’¤È’Èæ’³Ó’¡£’Æ±’¤¸’¤Î’¤Ï’»È’¤ï’¤Ê’¤¤’¤è’¤¦’¤Ë’¤·’¤¿’¤¤’¡£
+//src’¤¬’Áý’¤¨’¤ë’¤Û’¤É’Àº’Ì©’¤Ë’¤Ê’¤ë’¥¤’¥á’¡¼’¥¸
+//src’¤Èimg’¤Ï’Æ±’¤¸’¥¢’¥¹’¥Ú’¥¯’¥È’Èæ’¤Ë’¤Ê’¤ë’¤è’¤¦’¤Ë’¤¹’¤ë’Í½’Äê
+
+//’ºÇ’Âç’¸ø’Ìó’¿ô’¤ò’µá’¤á’¤ë
+int getGCD(int x, int y){
+  int tmp = 0;
+  if(x<y){
+    tmp = x;
+    x = y;
+    y = tmp;
+  }
+
+  if (y<=0){
+    return -1;
+  }
+  
+  if(x%y==0){
+    return y;
+  }
+  //’ºÆ’µ¢
+  return getGCD(y, x%y);
+}
+  
+
+int main(int argc, const char *argv[]){
+  IplImage *img, *src;  //img: picture want to make  src: source
+  int i,j,k;
+  int x, y;
+  int aspX, aspY;
+  char str1[128] = {0};
+  char str2[] = ".jpg";
+  int *img_rgb, *src_rgb;
+  int img_number, src_number = 80;
+  int tmp = 0;
+  char raw_img[150] = "../pikachu.jpg";
+  int n;
+  int mosaic_x, mosaic_y; //’Ê¬’³ä’¤¹’¤ë’¸Ä’¤Î’²è’Áü’¤Ë’¤ª’¤¤’¤Æ’¤Îmosaic_pixel’¤Î’¿ô
+
+  img = cvLoadImage(raw_img, CV_LOAD_IMAGE_COLOR);
+  if(img == NULL){
+    printf("no such file\n");
+    exit(-1);
+  }
+
+  //img’¤Î’½Ä’²£’Èæ’¤ò’·×’»»
+  x = img->width;
+  y = img->height;
+  if((n = getGCD(x, y)) > 0){
+    aspX = x/n;
+    aspY = y/n;
+    printf("aspect--%d:%d\n", aspX, aspY);
+  }
+
+  img_rgb = (int*)malloc(sizeof(int)*(img->height/mosaic)*(img->width/mosaic)*3);  //mosaic’¤ÎRGB’¤ò’Æþ’¤ì’¤ë
+  if(img_rgb == NULL){
+    printf("malloc failed\n");
+    exit(-1);
+  }
+
+  for(y=0; y<(img->height/mosaic); y++){
+    for(x=0; x<(img->width/mosaic); x++){
+      int r=0, g=0, b=0;
+      for(j=0; j<mosaic; j++){
+	for(i=0; i<mosaic; i++){
+	  b += img->imageData[img->widthStep*(y*mosaic+j)+(x*mosaic+i)*3];
+	  g += img->imageData[img->widthStep*(y*mosaic+j)+(x*mosaic+i)*3+1];
+	  r += img->imageData[img->widthStep*(y*mosaic+j)+(x*mosaic+i)*3+2];
+	}
+      }
+      b = b/(mosaic*mosaic);
+      g = g/(mosaic*mosaic);
+      r = r/(mosaic*mosaic);
+      img_rgb[(img->width/mosaic)*y+x*3] = b;
+      img_rgb[(img->width/mosaic)*y+x*3+1] = g;
+      img_rgb[(img->width/mosaic)*y+x*3+2] = r;
+    }
+  }
+
+  //decide img_number (the number of divide the img)
+  int a, sqrt_a;
+  a = src_number/(aspX*aspY);
+  if(src_number%(aspX*aspY) != 0){
+    a++;
+  }
+  sqrt_a = sqrt(a);
+  if(a != sqrt_a*sqrt_a){
+    sqrt_a++;
+  }
+  img_number = sqrt_a;
+  mosaic_x = (img->width/mosaic)/sqrt_a;
+  mosiac_y = (img->height/mosaic)/sqrt_a;
+
+  for(i=1; i<=80; i++){
+    sprintf(str1, "%d", i);
+    process_pictures(str1,  mosaic_x, mosaic_y); //resize ’¤½’¤Î’¤Þ’¤Þ’¥â’¥¶’¥¤’¥¯’²è’¤Î’Éô’ÉÊ’¤È’¤Ê’¤ë
+
+    //RGB’¤ò’·×’»»’¡£img’¤È’Èæ’³Ó
+    char src_img[150] = "../processed_pictures/";
+    strcat(str1, str2);
+    strcat(src_img, str1);
+    
+    src = cvLoadImage(src_img, CV_LOAD_IMAGE_COLOR);
+    if(src == NULL){
+      printf("%d no such a file\n", i);
+      exit(-1);
+    }
+
+    //’¤³’¤³’¤«’¤é
+    for(y=0; y<src->height; y++){
+      for(x=0; x<src->width; x++){
+	int r=0, g=0, b=0;
+	b = img->imageData[img->widthStep*y+x*3];
+	g = img->imageData[img->widthStep*y+x*3+1];
+	r = img->imageData[img->widthStep*y+x*3+2];
+	img_rgb[(img->width/mosaic)*y+x*3] = b;
+	img_rgb[(img->width/mosaic)*y+x*3+1] = g;
+	img_rgb[(img->width/mosaic)*y+x*3+2] = r;
+      }
+    }
+
+    
+  }
+
+  free(img_rgb);
+
+  return 0;
+}
