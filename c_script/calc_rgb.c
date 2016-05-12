@@ -3,8 +3,11 @@
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
+#include <stdlib.h>
+#include <time.h>
 
 #define mosaic 1  //mosaicの一辺の大きさ srcに関して実装できていない。
+#define N 2 //上位N個から画像を選ぶ
 //calc rgb of src and img, put the src which has nearset rgb to img
 //imgはsrcの数と同じもしくは少し多めに分割してRGBを計算
 //srcと比較。同じのは使わないようにしたい。
@@ -39,8 +42,8 @@ int main(int argc, const char *argv[]){
   //今回はアンドロイドを想定して
 
   //aspX aspYは4x4あたりがベスト。
-  aspX = 4;
-  aspY = 4;
+  aspX = 16;
+  aspY = 16;
 
   //j:setting X Y by pikachu image
   X = img->width/aspX;
@@ -153,19 +156,47 @@ int main(int argc, const char *argv[]){
   dst2 = cvCreateImage(cvSize(aspX*X, aspY*Y), IPL_DEPTH_8U, 3);
   for(y=0; y<Y; y++){
     for(x=0; x<X; x++){
-      int min = 0;
-      for(i=1; i<src_number; i++){
-        if(dif[i][X*y+x] < dif[min][X*y+x]){
-          min = i;
+      int min[N];
+      for (i=0; i<N; i++){
+        min[i] = i;
+      }
+      int temp;
+      for(k=0; k<N-1; k++){
+        for(l=N-1; l>k; l--){
+          if(dif[min[l-1]][X*y+x]>dif[min[l]][X*y+x]){ //if prior data is bigger
+            temp = min[l]; //exchange
+            min[l] = min[l-1];
+            min[l-1] = temp;
+          }
         }
       }
-      //printf("min = %d\n", min);
+      for(i=N; i<src_number; i++){
+        if(dif[i][X*y+x] < dif[min[N-1]][X*y+x]){
+          min[N-1] = i;
+          k=N-1;
+          while(k){
+            if(dif[min[k-1]][X*y+x] < dif[min[k]][X*y+x]){
+              temp = min[k];
+              min[k] = min[k-1];
+              min[k-1] = temp;
+              k--;
+            }else{
+              break;
+            }
+          }
+        }
+      }
+      //printf("min = %d %d %d %d %d\n", min[0], min[1], min[2], min[3], min[4]);
+      //choose index from min by random
+      int min_;
+      //srand((unsigned)time(NULL));
+      min_ = min[rand()%N];
+      //printf("chosen min = %d\n",min_);
       for(j=0; j<aspY; j++){
         for(i=0; i<aspX; i++){
-          printf("chosen min = %d\n",min);
-          dst2->imageData[dst2->widthStep*(y*aspY+j)+(x*aspX+i)*3  ] = src_rgb[min][aspX*3*j+i*3  ];
-          dst2->imageData[dst2->widthStep*(y*aspY+j)+(x*aspX+i)*3+1] = src_rgb[min][aspX*3*j+i*3+1];
-          dst2->imageData[dst2->widthStep*(y*aspY+j)+(x*aspX+i)*3+2] = src_rgb[min][aspX*3*j+i*3+2];
+          dst2->imageData[dst2->widthStep*(y*aspY+j)+(x*aspX+i)*3  ] = src_rgb[min_][aspX*3*j+i*3  ];
+          dst2->imageData[dst2->widthStep*(y*aspY+j)+(x*aspX+i)*3+1] = src_rgb[min_][aspX*3*j+i*3+1];
+          dst2->imageData[dst2->widthStep*(y*aspY+j)+(x*aspX+i)*3+2] = src_rgb[min_][aspX*3*j+i*3+2];
         }
       }
     }
