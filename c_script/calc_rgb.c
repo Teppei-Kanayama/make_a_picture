@@ -7,7 +7,7 @@
 #include <time.h>
 
 #define mosaic 1  //mosaicの一辺の大きさ srcに関して実装できていない。
-#define N 2 //上位N個から画像を選ぶ
+#define N 1 //上位N個から画像を選ぶ
 //calc rgb of src and img, put the src which has nearset rgb to img
 //imgはsrcの数と同じもしくは少し多めに分割してRGBを計算
 //srcと比較。同じのは使わないようにしたい。
@@ -23,15 +23,15 @@ int main(int argc, const char *argv[]){
   unsigned char **img_rgb;
   unsigned char **src_rgb;
   float **dif;
-  int img_number, src_number = 180;
+  int img_number, src_number = 273;
   int tmp = 0;
-  char raw_img[150] = "../pikachu_high.jpg";
+  char raw_img[150] = "../okada.jpg";
   int n;
   int mosaic_x, mosaic_y; //分割する個の画像においてのmosaic_pixelの数
   int X, Y;
   int A = 1; //imgを何倍にするか
   int params[] = {CV_IMWRITE_JPEG_QUALITY, 50, -1}; //save image
-
+  printf(" ");
   //j: here img = pikachu image.
   img = cvLoadImage(raw_img, CV_LOAD_IMAGE_COLOR);
   if(img == NULL){
@@ -42,9 +42,10 @@ int main(int argc, const char *argv[]){
   //今回はアンドロイドを想定して
 
   //aspX aspYは4x4あたりがベスト。
-  aspX = 16;
-  aspY = 16;
-
+  //aspX = 16;
+  //aspY = 16;
+  aspX = 48;
+  aspY = 48;
   //j:setting X Y by pikachu image
   X = img->width/aspX;
   Y = img->height/aspY;
@@ -60,7 +61,7 @@ int main(int argc, const char *argv[]){
   while(X*Y*A*A < src_number){
     A++;
   }
-
+  A = 10;
   //j: why scale?
   X = X*A;
   Y = Y*A;

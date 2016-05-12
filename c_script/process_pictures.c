@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 
+
 //resize the raw pictures into the same size
 //if the number of picture increases, increase the number
 
