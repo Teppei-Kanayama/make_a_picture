@@ -21,6 +21,8 @@ cv2, numpy, PIL のライブラリが必要です。
 
 ## Usage
 
+under construnction
+
 ## Install
 
 ## Contribution
